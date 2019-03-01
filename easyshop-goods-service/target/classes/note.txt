@@ -1,0 +1,4 @@
+easyshop-goods-service: port=8081
+easyshop-manager-web: port=8082
+easyshop-shop-web: port=8083
+easyshop-portal-web: port=8084

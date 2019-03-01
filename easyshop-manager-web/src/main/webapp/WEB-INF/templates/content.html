@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>广告管理</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <link rel="stylesheet" href="../plugins/bootstrap/css/bootstrap.min.css" th:href="@{/plugins/bootstrap/css/bootstrap.min.css}" >
+    <link rel="stylesheet" href="../plugins/adminLTE/css/AdminLTE.css" th:href="@{/plugins/adminLTE/css/AdminLTE.css}">
+    <link rel="stylesheet" href="../plugins/adminLTE/css/skins/_all-skins.min.css" th:href="@{/plugins/adminLTE/css/skins/_all-skins.min.css}">
+    <link rel="stylesheet" href="../css/style.css" th:href="@{/css/style.css}">
+	<script src="../plugins/jQuery/jquery-2.2.3.min.js" th:src="@{/plugins/jQuery/jquery-2.2.3.min.js}"></script>
+    <script src="../plugins/bootstrap/js/bootstrap.min.js" th:src="@{/plugins/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="media/layui/layui.js" th:src="@{/media/layui/layui.js}"></script>
+    
+    <script type="text/javascript">
+	    //跳转页码
+	    function goPage(pageIndex){
+	    	$("#contentForm").attr("action","/content/list/"+pageIndex);
+			$("#contentForm").submit();
+	    }
+	    
+	    //--异步查询下拉框---新增以供选择
+	    function getContentCategorys(){
+			 $.get("/content/getContentCategorys", null, function(obj) {
+				 $("#select_add").html("");
+				 for(var i=0;i<obj.length;i++){
+					 var id=obj[i].id;
+					 var name=obj[i].name;
+					 $("#select_add").append("<option value=\""+id+"\">"+name+"</option>");
+				 }
+			 });
+	    }
+	    
+	    
+	    //新增的时候文件上传
+	    function uploadImg_add(){
+	    	var formData = new FormData();//异步模拟表单
+			formData.append("file", document.getElementById("file_add").files[0]);  //向表单中添加一个文件上传框
+			
+			$.ajax({
+				url:"/uploadImg",
+				type:"post",      //文件上传必须post
+				data: formData,
+                /**
+                *必须false才会自动加上正确的Content-Type
+                */
+                contentType: false,
+                /**
+                * 必须false才会避开jQuery对 formdata 的默认处理
+                * XMLHttpRequest会对 formdata 进行正确的处理
+                */
+                processData: false,
+				success:function(result){
+					//alert(JSON.stringify(result));
+					layui.use('table', function() {
+						if(result.flag==true){
+							layer.msg("上传成功", {icon : 6},function(){
+								
+								$("#upload_img_add").prop("src",result.msg); //成功之后给src重新赋值  显示成功之后的图片地址
+								
+								$("#upload_img_add_pic").val(result.msg); //隐藏值
+							});
+						}else{
+							layer.msg("上传失败", {icon : 5},function(){});
+						}
+					});
+				}
+			});
+	    }
+	    
+	    
+	    //新增广告
+	    function addContent(){
+	    	$.ajax({
+				url:"/content/add",
+				type:"post",
+				dataType:"json",
+				data:$("#addForm").serialize(),  
+				success:function(result){
+					layui.use('table', function() {
+						if(result.flag==true){
+							layer.msg("新增成功", {icon : 6},function(){
+								window.location.reload();//刷新页面
+							});
+						}else{
+							layer.msg("新增失败", {icon : 5},function(){
+								window.location.reload();//刷新页面
+							});
+						}
+					});
+				}
+			});
+	    }
+	    
+	    //根据ID查询
+	    function getContentById(id){
+	    	$.get("/content/findOne/"+id, null, function(result) {
+	    		 
+	    		 //把查询到的对象回显到更新的界面上
+				 $("#contentId").val(result.id); //隐藏值
+				 
+				 $("#title").val(result.title);
+				 $("#url").val(result.url);  
+				 $("#sortOrder").val(result.sortOrder); 
+				 //$("#status").val(result.status);  //淡定给谁
+				 
+				 $("[name='status']").each(function(index,obj){
+					 if($(obj).val()==result.status){
+						 $(obj).prop("checked",true);
+					 }
+				 });
+				 
+				 
+				 $("#upload_img_update_pic").val(result.pic); //隐藏图片地址 
+				 
+				 $("#upload_img_update").prop("src",result.pic); //回显的图片
+				 
+				 
+				//加载下拉框
+				 $.get("/content/getContentCategorys", null, function(obj) {
+					 $("#select_update").html("");
+					 for(var i=0;i<obj.length;i++){
+						 var id=obj[i].id;
+						 var name=obj[i].name;
+						 $("#select_update").append("<option value=\""+id+"\">"+name+"</option>");
+					 }
+					 $("#select_update").val(result.categoryId);//选中
+				 });
+				 
+				 
+			 });
+	    }
+	    
+	    //更新图片
+	    function updateImage_update(){
+	    	var formData = new FormData();//异步模拟表单
+			formData.append("file", document.getElementById("file_update").files[0]);  //向表单中添加一个文件上传框
+			
+			$.ajax({
+				url:"/uploadImg",
+				type:"post",      //文件上传必须post
+				data: formData,
+                /**
+                *必须false才会自动加上正确的Content-Type
+                */
+                contentType: false,
+                /**
+                * 必须false才会避开jQuery对 formdata 的默认处理
+                * XMLHttpRequest会对 formdata 进行正确的处理
+                */
+                processData: false,
+				success:function(result){
+					//alert(JSON.stringify(result));
+					layui.use('table', function() {
+						if(result.flag==true){
+							layer.msg("更新图片成功", {icon : 6},function(){
+								$("#upload_img_update").prop("src",result.msg); //成功之后给src重新赋值  显示成功之后的图片地址
+								$("#upload_img_update_pic").val(result.msg); //隐藏值
+							});
+						}else{
+							layer.msg("更新图片失败", {icon : 5},function(){});
+						}
+					});
+				}
+			});
+	    }
+	    
+	  //更新
+	    function updateContent(){
+	    	$.ajax({
+				url:"/content/update",
+				type:"post",
+				dataType:"json",
+				data:$("#updateForm").serialize(),  
+				success:function(result){
+					layui.use('table', function() {
+						if(result.flag==true){
+							layer.msg("更新成功", {icon : 6},function(){
+								window.location.reload();//刷新页面
+							});
+						}else{
+							layer.msg("更新失败", {icon : 5},function(){
+								window.location.reload();//刷新页面
+							});
+						}
+					});
+				}
+			});
+	    }
+	    
+	</script>
+    
+</head>
+
+<body class="hold-transition skin-red sidebar-mini">
+  <!-- .box-body --> 
+                     
+                     <form action="#" th:action="@{/content/list/1}" method="post" id="contentForm">
+                     
+                     </form>
+                    <div class="box-body">
+
+                        <!-- 数据表格 -->
+                        <div class="table-box">
+
+                            <!--工具栏-->
+                            <div class="pull-left">
+                                <div class="form-group form-inline">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-default" title="新建" data-toggle="modal" data-target="#addModal" onclick="getContentCategorys();"><i class="fa fa-file-o"></i> 新建</button>
+                                        <button type="button" class="btn btn-default" title="删除" ><i class="fa fa-trash-o"></i> 删除</button>
+                                        <button type="button" class="btn btn-default" title="开启" onclick='confirm("你确认要开启吗？")'><i class="fa fa-check"></i> 开启</button>
+                                        <button type="button" class="btn btn-default" title="屏蔽" onclick='confirm("你确认要屏蔽吗？")'><i class="fa fa-ban"></i> 屏蔽</button>
+                                        <button type="button" class="btn btn-default" title="刷新" onclick="window.location.reload();"><i class="fa fa-refresh"></i> 刷新</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="box-tools pull-right">
+                                <div class="has-feedback">
+							                                  
+                                </div>
+                            </div>
+                            <!--工具栏/-->
+
+			                  <!--数据列表-->
+			                  <table id="dataList" class="table table-bordered table-striped table-hover dataTable">
+			                      <thead>
+			                          <tr>
+			                              <th class="" style="padding-right:0px">
+			                                  <input id="selall" type="checkbox" class="icheckbox_square-blue">
+			                              </th> 
+										  <th class="sorting_asc">广告ID</th>
+									      <th class="sorting">分类名称</th>
+									      <th class="sorting">标题</th>
+									      <th class="sorting">URL</th>		
+									      <th class="sorting">图片</th>	
+									      <th class="sorting">排序</th>		
+									      <th class="sorting">是否有效</th>											     						      							
+					                      <th class="text-center">操作</th>
+			                          </tr>
+			                      </thead>
+			                      <tbody>
+			                          <tr th:each="content:${pageResult.list}">
+			                              <td><input  type="checkbox"></td>			                              
+				                          <td th:text="${content.id}">1</td>
+									      <td th:text="${content.categoryName}">1</td>
+									      <td th:text="${content.title}">促销海报1</td>
+									      <td th:text="${content.url}">http://wwww.hb.com/hd1.html</td>
+									      <td>
+									      	<img alt="广告图片" th:src="${content.pic}" width="100px" height="50px">
+									      </td>
+									      <td th:text="${content.sortOrder}">1</td>
+									      <td th:text="${content.status}==1?'有效':'无效'">有效</td>									     								     
+		                                  <td class="text-center">                                           
+		                                 	  <button th:if="${content.status}==0" type="button" class="btn bg-olive btn-xs" data-toggle="modal" data-target="#editModal">有效</button>                                           
+		                                 	  <button th:if="${content.status}==1" type="button" class="btn bg-red btn-xs" data-toggle="modal" data-target="#editModal">无效</button>                                           
+		                                 	  <button type="button" class="btn bg-olive btn-xs" data-toggle="modal" data-target="#editModal" th:onclick="|getContentById(${content.id});|">修改</button>
+		                                 	  <button type="button" class="btn bg-red btn-xs" data-toggle="modal" data-target="#editModal">删除</button>                                             
+		                                  </td>
+			                          </tr>
+			                      </tbody>
+			                  </table>
+			                  <!--数据列表/--> 
+			                  <!-- 添加分页的页码 -->
+			                  <!-- 分页组件 -->
+			                  <div class="row">
+			                	<div class="col-sm-6"><div class="dataTables_paginate paging_bootstrap" id="sample-table_paginate">
+			                	    <ul class="pagination">
+			                	      <li class="prev"><a href="#" th:onclick="|goPage(${pageResult.pageIndex-1})|">上一页</a></li>
+			                	      <li th:each="num:${pageResult.numbers}" th:class="${pageResult.pageIndex==num}? active"><a href="#" th:onclick="'goPage('+${num}+')'" th:text="${num}">1</a></li>
+			                	      <li class="next"><a href="#" th:onclick="|goPage(${pageResult.pageIndex+1})|">下一页</a></li>
+			                	      <li class="next"><a href="#" >共<span th:text="${pageResult.totalCount}">XXXXX</span>条</a></li>
+			                	    </ul>
+			                	 </div>
+			                	</div>
+			                   </div>
+			                 <!-- 分页组件 -->
+			                 <!-- 添加分页的页码 -->
+                        </div>
+                        <!-- 数据表格 /-->
+                     </div>
+                    <!-- /.box-body -->
+
+<!-- 新增窗口 -->
+<form action="#" method="post" id="addForm">
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" >
+	<div class="modal-content">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+			<h3 id="myModalLabel">广告新增</h3>
+		</div>
+		<div class="modal-body">							
+			
+			<table class="table table-bordered table-striped"  width="800px">
+				<tr>
+		      		<td>广告分类</td>
+		      		<td>
+		      			<select class="form-control" id="select_add" name="categoryId">
+		      			    <!-- 通过查询绑定 -->
+		                </select>
+		                <!-- <input type="hidden" name="id" id="contentId"/> -->
+		      		</td>
+		      	</tr>
+		      	<tr>
+		      		<td>标题</td>
+		      		<td><input  class="form-control" placeholder="标题" name="title" >  </td>
+		      	</tr>
+			    <tr>
+		      		<td>URL</td>
+		      		<td><input  class="form-control" placeholder="URL" name="url">  </td>
+		      	</tr>	
+		      	<tr>
+		      		<td>排序</td>
+		      		<td><input  class="form-control" placeholder="排序" name="sortOrder">  </td>
+		      	</tr>			      	
+		      	<tr>
+		      		<td>广告图片</td>
+		      		<td>
+						<table>
+							<tr>
+								<td>
+								   
+								   <!-- 文件上传的框 -->
+								   <input type="file" id="file_add" />	
+								   	
+								   	<!-- 上传成功之后地址藏起来  提交到数据库 -->
+								   <input type="hidden" name="pic" id="upload_img_add_pic"/>
+								   		                
+					                <button class="btn btn-primary" type="button" onclick="uploadImg_add();">
+				                   		上传
+					                </button>	
+					            </td>
+								<td>
+								    <!-- 显示的图片 -->
+									<img src="#" id="upload_img_add" width="150px" height="100px">
+								</td>
+							</tr>						
+						</table>
+		      		</td>
+		      	</tr>	      
+		      	<tr>
+		      		<td>是否有效</td>
+		      		<td>
+		      		   <input type="radio" class="icheckbox_square-blue" name="status" value="1" checked="checked"/>有效
+		      		   <input type="radio" class="icheckbox_square-blue" name="status" value="0"/>无效
+		      		</td>
+		      	</tr>  	
+			 </table>				
+			
+		</div>
+		<div class="modal-footer">						
+			<button class="btn btn-success" data-dismiss="modal" aria-hidden="true" onclick="addContent();">新增</button>
+			<button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+		</div>
+	  </div>
+	</div>
+</div>
+</form>
+
+		
+<!-- 编辑窗口 -->
+<form method="post" id="updateForm">
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" >
+	<div class="modal-content">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+			<h3 id="myModalLabel">广告编辑</h3>
+		</div>
+		<div class="modal-body">							
+			
+			<table class="table table-bordered table-striped"  width="800px">
+				<tr>
+		      		<td>广告分类</td>
+		      		<td>
+		      			<select class="form-control" id="select_update" name="categoryId">
+		      			
+		                </select>
+		                 <input type="hidden" name="id" id="contentId"/> 
+		      		</td>
+		      	</tr>
+		      	<tr>
+		      		<td>标题</td>
+		      		<td><input  class="form-control" placeholder="标题" name="title" id="title">  </td>
+		      	</tr>
+			    <tr>
+		      		<td>URL</td>
+		      		<td><input  class="form-control" placeholder="URL" name="url" id="url">  </td>
+		      	</tr>	
+		      	<tr>
+		      		<td>排序</td>
+		      		<td><input  class="form-control" placeholder="排序" name="sortOrder" id="sortOrder">  </td>
+		      	</tr>			      	
+		      	<tr>
+		      		<td>广告图片</td>
+		      		<td>
+						<table>
+							<tr>
+								<td>
+								    <!-- 文件上传的框 -->
+								   <input type="file" id="file_update" />	
+								   	
+								   	<!-- 上传成功之后地址藏起来  提交到数据库 -->
+								    <input type="hidden" name="pic" id="upload_img_update_pic"/>
+								   				                
+					                <button class="btn btn-primary" type="button" onclick="updateImage_update();">
+				                   		上传
+					                </button>	
+					            </td>
+								<td>
+									<!-- 显示的图片 -->
+									<img src="#" id="upload_img_update" width="150px" height="100px">
+								</td>
+							</tr>						
+						</table>
+		      		</td>
+		      	</tr>	      
+		      	<tr>
+		      		<td>是否有效</td>
+		      		<td>
+		      		   <input type="radio" class="icheckbox_square-blue" name="status" value="1"/>有效
+		      		   <input type="radio" class="icheckbox_square-blue" name="status" value="0"/>无效
+		      		</td>
+		      	</tr>  	
+			 </table>				
+			
+		</div>
+		<div class="modal-footer">						
+			<button class="btn btn-success" data-dismiss="modal" aria-hidden="true" onclick="updateContent();">更新</button>
+			<button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+		</div>
+	  </div>
+	</div>
+</div>
+</form>
+
+</body>
+
+</html>

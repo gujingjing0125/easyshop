@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd
+						http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+   
+	<!-- 设置页面不登陆也可以访问 -->
+	<http pattern="/login.html" security="none"></http>
+	<http pattern="/css/**" security="none"></http>
+	<http pattern="/js/**" security="none"></http>
+	<http pattern="/media/**" security="none"></http>
+	<http pattern="/plugins/**" security="none"></http>
+	<http pattern="/loginFailure" security="none"></http>
+
+	<!-- 页面的拦截规则    use-expressions:是否启动SPEL表达式 默认是true -->
+	<http use-expressions="false">
+		<!-- 当前用户必须有ROLE_USER的角色 才可以访问根目录及所属子目录的资源 -->
+		<intercept-url pattern="/**" access="ROLE_ADMIN"/>
+		<!-- 开启表单登陆功能 -->
+		<!-- always-use-default-target：指定了是否在身份验证通过后总是跳转到default-target-url属性指定的URL。 -->
+		<form-login  login-page="/login.html" default-target-url="/index" authentication-failure-url="/loginFailure" always-use-default-target="true"/>
+		<!-- 跨站请求伪造  关闭csrf ,如果不加会出现错误 -->
+		<csrf disabled="true"/>
+		<!-- 如果你在系统中使用了框架页，需要设置框架页的策略为SAMEORIGIN -->
+		<headers>
+			<frame-options policy="SAMEORIGIN"/>
+		</headers>
+		 <!-- 自动退出    发请求     /logout  默认退出成功跳登录页面  -->
+		<logout />
+	</http>
+	
+	<!--1 引用dubbo 服务 -->
+	<dubbo:application name="easyshop-manager-web"/>
+	
+	<dubbo:registry address="zookeeper://127.0.0.1:2181"/>
+	
+	<dubbo:reference id="userService" interface="com.easyshop.service.UserService"/>
+	
+	<!--2 认证类：验证账号和密码  在数据库  -->
+	<beans:bean id="userAuthorization" class="com.easyshop.controller.MyUserDetailsService">
+		<beans:property name="userService" ref="userService"/>
+	</beans:bean>
+	
+	<!--3 登录的时候密码加密之后  再和数据库比对 -->
+	<beans:bean id="bcryptEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+	
+    <!--4 认证管理器 -->
+	<authentication-manager>
+		<authentication-provider user-service-ref="userAuthorization">	
+			<password-encoder ref="bcryptEncoder"/>
+		</authentication-provider>	
+	</authentication-manager>
+		
+</beans:beans>
